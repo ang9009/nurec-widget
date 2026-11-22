@@ -1,9 +1,5 @@
 package dev.nurec.widget.ui
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.RectF
 import androidx.compose.ui.graphics.Color
 import dev.nurec.widget.data.Level
 
@@ -30,29 +26,4 @@ object Palette {
         level == Level.HIGH -> Coral
         else -> Offline
     }
-}
-
-/** Glance can't draw arcs, so ring gauges are rendered to a bitmap. */
-object RingBitmap {
-    fun draw(sizePx: Int, strokePx: Float, fraction: Float, color: Color, track: Color = Palette.Track): Bitmap {
-        val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val inset = strokePx / 2f + 1f
-        val oval = RectF(inset, inset, sizePx - inset, sizePx - inset)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = strokePx
-            strokeCap = Paint.Cap.ROUND
-        }
-        paint.color = track.toArgb()
-        canvas.drawArc(oval, 0f, 360f, false, paint)
-        val sweep = 360f * fraction.coerceIn(0.02f, 1f)
-        paint.color = color.toArgb()
-        canvas.drawArc(oval, -90f, sweep, false, paint)
-        return bmp
-    }
-
-    private fun Color.toArgb(): Int = android.graphics.Color.argb(
-        (alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt(),
-    )
 }

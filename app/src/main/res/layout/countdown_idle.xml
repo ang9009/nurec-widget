@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Idle refresh button, shown at the end of the countdown until the widget redraws. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView
+        android:id="@+id/idle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="4dp"
+        android:background="@drawable/btn_bg_idle"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_refresh"
+        android:tint="#FF101114"
+        android:importantForAccessibility="no" />
+</FrameLayout>
