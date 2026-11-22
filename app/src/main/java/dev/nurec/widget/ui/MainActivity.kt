@@ -1,6 +1,5 @@
 package dev.nurec.widget.ui
 
-import android.graphics.Typeface
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,7 +39,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,7 +58,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import kotlin.math.roundToInt
 
-private val Condensed = FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD))
+private val Condensed = Fonts.Barlow
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,9 +78,11 @@ class MainActivity : ComponentActivity() {
                 }
                 while (true) { now = Instant.now(); delay(1000) }
             }
-            Screen(state, now) {
-                scope.launch {
-                    if (repo.tryStartAttempt()) RefreshWorker.enqueueManual(applicationContext)
+            CompositionLocalProvider(LocalTextStyle provides TextStyle(fontFamily = Fonts.Archivo)) {
+                Screen(state, now) {
+                    scope.launch {
+                        if (repo.tryStartAttempt()) RefreshWorker.enqueueManual(applicationContext)
+                    }
                 }
             }
         }
@@ -97,7 +103,7 @@ private fun Screen(state: UiState, now: Instant, onRefresh: () -> Unit) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("NU REC", color = Palette.Text, fontSize = 44.sp, fontFamily = Condensed, letterSpacing = 1.5.sp)
+                Text("NU REC", color = Palette.Text, fontSize = 44.sp, fontFamily = Condensed, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Spacer(Modifier.size(10.dp))
                 val (label, bg, fg) = when {
                     state.snapshot == null -> Triple("NO DATA", Palette.Chip, Palette.Text)
@@ -153,7 +159,7 @@ private fun Screen(state: UiState, now: Instant, onRefresh: () -> Unit) {
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("ADD THE WIDGET", color = Palette.Text, fontSize = 18.sp, fontFamily = Condensed, letterSpacing = 1.sp)
+            Text("ADD THE WIDGET", color = Palette.Text, fontSize = 18.sp, fontFamily = Condensed, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Text(
                 "Long-press your home screen → Widgets → NU Rec, then drag it out. " +
                     "Shrink it to 2×2 for the compact view.",
@@ -178,12 +184,19 @@ private fun RoomCard(room: Room, stale: Boolean) {
         Box(Modifier.size(76.dp), contentAlignment = Alignment.Center) {
             Ring(fraction = ((pct ?: 0.0) / 100).toFloat(), color = color)
             Text(
-                when {
-                    room.closed -> "—"
-                    pct == null -> "?"
-                    else -> "${pct.roundToInt()}%"
+                buildAnnotatedString {
+                    when {
+                        room.closed -> append("—")
+                        pct == null -> append("?")
+                        else -> {
+                            append("${pct.roundToInt()}")
+                            withStyle(SpanStyle(fontSize = 13.sp, color = Palette.Muted, fontWeight = FontWeight.SemiBold)) {
+                                append("%")
+                            }
+                        }
+                    }
                 },
-                color = Palette.Text, fontSize = 24.sp, fontFamily = Condensed,
+                color = Palette.Text, fontSize = 26.sp, fontFamily = Condensed, fontWeight = FontWeight.Bold,
             )
         }
         Spacer(Modifier.size(16.dp))

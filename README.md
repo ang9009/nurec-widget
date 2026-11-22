@@ -63,3 +63,10 @@ Then: long-press the home screen → Widgets → NU Rec → drag it out.
 | `widget/RecWidget.kt` | Glance widget, receiver, refresh action |
 | `ui/MainActivity.kt` | Launcher screen (Compose) |
 | `ui/Palette.kt` | Colors + ring bitmap for Glance |
+
+## Fonts
+
+Barlow Condensed and Archivo are bundled in `app/src/main/res/font/` under the SIL Open Font
+License 1.1 (see `licenses/`). Glance widgets can only use system fonts, so the widget draws its
+text to bitmaps with these fonts (`ui/Fonts.kt`, `TextBitmap`); each image carries the text as its
+accessibility description.
