@@ -5,18 +5,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import dev.nurec.widget.R
 
-/** Bundled fonts from the mockup (both SIL OFL 1.1, see /licenses).
- * The widget uses the same fonts from XML layouts (res/layout/text_*.xml). */
+/**
+ * Lato (SIL OFL 1.1, see /licenses): the fallback font northeastern.edu declares for FF Real,
+ * which is commercial. The widget draws the same font into text masks (widget/Glyphs.kt).
+ */
 object Fonts {
-    val Archivo = FontFamily(
-        Font(R.font.archivo_regular, FontWeight.Normal),
-        Font(R.font.archivo_medium, FontWeight.Medium),
-        Font(R.font.archivo_semibold, FontWeight.SemiBold),
-        Font(R.font.archivo_bold, FontWeight.Bold),
+    val Lato = FontFamily(
+        Font(R.font.lato_regular, FontWeight.Normal),
+        Font(R.font.lato_bold, FontWeight.Bold),
+        Font(R.font.lato_black, FontWeight.Black),
     )
-    val Barlow = FontFamily(
-        Font(R.font.barlow_condensed_semibold, FontWeight.SemiBold),
-        Font(R.font.barlow_condensed_bold, FontWeight.Bold),
-    )
-
 }

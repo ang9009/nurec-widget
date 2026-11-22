@@ -44,7 +44,7 @@ object Animated {
             val f = RemoteViews(context.packageName, R.layout.countdown_frame)
             val step = (s * 15f / total).toInt().coerceIn(1, 15) // ring art has 15 steps
             f.setImageViewResource(R.id.ring, drawable(context, "btn_ring_%02d".format(step)))
-            val label = Glyphs.render(context, "0:%02d".format(s), Glyphs.Face.DISPLAY_SEMIBOLD, textDp)
+            val label = Glyphs.render(context, "0:%02d".format(s), Glyphs.Face.BLACK, textDp)
             f.setImageViewBitmap(R.id.label, label.bitmap)
             f.setInt(R.id.label, "setColorFilter", Palette.Muted.toArgb())
             rv.addView(R.id.flipper, f)

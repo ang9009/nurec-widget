@@ -20,11 +20,9 @@ import kotlin.math.ceil
  */
 object Glyphs {
     enum class Face(@FontRes val res: Int) {
-        BODY(R.font.archivo_regular),
-        BODY_SEMIBOLD(R.font.archivo_semibold),
-        BODY_BOLD(R.font.archivo_bold),
-        DISPLAY(R.font.barlow_condensed_bold),
-        DISPLAY_SEMIBOLD(R.font.barlow_condensed_semibold),
+        REGULAR(R.font.lato_regular),
+        BOLD(R.font.lato_bold),
+        BLACK(R.font.lato_black),
     }
 
     class Mask(val bitmap: Bitmap, val widthDp: Float, val heightDp: Float)

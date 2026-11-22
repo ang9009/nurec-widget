@@ -53,7 +53,10 @@ data class Room(
     val updated: Instant?,
     /** Display names; set for rooms on the allowlist. */
     val label: String = name,
+    /** 2×2 rows, e.g. "MRN 3rd Floor". */
     val shortLabel: String = name,
+    /** 4×2 tiles, shown above the facility label, e.g. "3rd Floor". */
+    val tileLabel: String = name,
 )
 
 /**
@@ -61,19 +64,25 @@ data class Room(
  * so "Marino Center- 2nd Floor" and "Marino Center - 2nd Floor" both match.
  */
 object RoomFilter {
-    data class Shown(val facility: Facility, val keyword: String, val label: String, val shortLabel: String)
+    data class Shown(
+        val facility: Facility,
+        val keyword: String,
+        val label: String,
+        val shortLabel: String,
+        val tileLabel: String,
+    )
 
     val SHOWN = listOf(
-        Shown(Facility.MARINO, "2nd Floor", "2nd Floor", "2nd Floor"),
-        Shown(Facility.MARINO, "3rd Floor Weight Room", "3rd Floor Weight Room", "3rd Fl Weights"),
-        Shown(Facility.SQUASHBUSTERS, "4th Floor", "4th Floor", "SB 4th Floor"),
+        Shown(Facility.MARINO, "2nd Floor", "2nd Floor", "MRN 2nd Floor", "2nd Floor"),
+        Shown(Facility.MARINO, "3rd Floor Weight Room", "3rd Floor Weight Room", "MRN 3rd Floor", "3rd Floor"),
+        Shown(Facility.SQUASHBUSTERS, "4th Floor", "4th Floor", "SB 4th Floor", "4th Floor"),
     )
 
     private fun norm(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
 
     fun apply(rooms: List<Room>): List<Room> = SHOWN.mapNotNull { shown ->
         rooms.firstOrNull { it.facility == shown.facility && norm(shown.keyword) in norm(it.name) }
-            ?.copy(label = shown.label, shortLabel = shown.shortLabel)
+            ?.copy(label = shown.label, shortLabel = shown.shortLabel, tileLabel = shown.tileLabel)
     }
 }
 

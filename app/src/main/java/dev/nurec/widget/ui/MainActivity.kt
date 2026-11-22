@@ -63,7 +63,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import kotlin.math.roundToInt
 
-private val Condensed = Fonts.Barlow
+private val Display = Fonts.Lato
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                 }
                 while (true) { now = Instant.now(); delay(1000) }
             }
-            CompositionLocalProvider(LocalTextStyle provides TextStyle(fontFamily = Fonts.Archivo)) {
+            CompositionLocalProvider(LocalTextStyle provides TextStyle(fontFamily = Fonts.Lato)) {
                 Screen(state, now) {
                     scope.launch {
                         if (repo.tryStartAttempt()) RefreshWorker.enqueueManual(applicationContext)
@@ -108,19 +108,19 @@ private fun Screen(state: UiState, now: Instant, onRefresh: () -> Unit) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("NU REC", color = Palette.Text, fontSize = 44.sp, fontFamily = Condensed, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text("NU Rec", color = Palette.Text, fontSize = 40.sp, fontFamily = Display, fontWeight = FontWeight.Black)
                 Spacer(Modifier.size(10.dp))
                 val (label, bg, fg) = when {
-                    state.snapshot == null -> Triple("NO DATA", Palette.Chip, Palette.Text)
-                    stale -> Triple("OFFLINE", Palette.Chip, Palette.Text)
-                    else -> Triple("LIVE", Palette.Lime, Palette.OnLime)
+                    state.snapshot == null -> Triple("NO DATA", Palette.Chip, Palette.Body)
+                    stale -> Triple("OFFLINE", Palette.Chip, Palette.Body)
+                    else -> Triple("LIVE", Palette.LivePill, Palette.RedLight)
                 }
                 Text(
-                    label, color = fg, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp,
-                    modifier = Modifier.background(bg, RoundedCornerShape(50)).padding(horizontal = 9.dp, vertical = 3.dp),
+                    label, color = fg, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.3.sp,
+                    modifier = Modifier.background(bg, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 4.dp),
                 )
             }
-            Text("How busy your floors are right now", color = Palette.Muted, fontSize = 14.sp)
+            Text("How busy your floors are right now", color = Palette.Muted, fontSize = 15.sp)
         }
 
         val left = state.cooldownRemaining(now)
@@ -129,16 +129,25 @@ private fun Screen(state: UiState, now: Instant, onRefresh: () -> Unit) {
             Button(
                 onClick = onRefresh,
                 enabled = !cooling,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Palette.Lime, contentColor = Palette.OnLime,
+                    containerColor = Palette.Red, contentColor = androidx.compose.ui.graphics.Color.White,
                     disabledContainerColor = Palette.Tile, disabledContentColor = Palette.Muted,
                 ),
                 modifier = Modifier.height(48.dp),
             ) {
+                if (!cooling) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(dev.nurec.widget.R.drawable.ic_refresh),
+                        contentDescription = null,
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(androidx.compose.ui.graphics.Color.White),
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                }
                 Text(
                     if (cooling) "Wait ${UiState.formatCountdown(left)}" else "Refresh",
-                    fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp, fontWeight = FontWeight.Black,
                 )
             }
             Spacer(Modifier.size(14.dp))
@@ -160,15 +169,14 @@ private fun Screen(state: UiState, now: Instant, onRefresh: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(BorderStroke(1.5.dp, Palette.Track), RoundedCornerShape(20.dp))
-                .padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+                .background(Palette.Card, RoundedCornerShape(24.dp))
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("ADD THE WIDGET", color = Palette.Text, fontSize = 18.sp, fontFamily = Condensed, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text("Add the widget", color = Palette.Text, fontSize = 17.sp, fontWeight = FontWeight.Black)
             Text(
-                "Long-press your home screen → Widgets → NU Rec, then drag it out. " +
-                    "Shrink it to 2×2 for the compact view.",
-                color = Palette.Body, fontSize = 13.sp, lineHeight = 20.sp,
+                "Long-press your home screen → Widgets → NU Rec. Shrink it to 2×2 for the compact view.",
+                color = Palette.Body, fontSize = 14.sp, lineHeight = 21.sp,
             )
             val context = LocalContext.current
             val awm = remember { AppWidgetManager.getInstance(context) }
@@ -176,10 +184,10 @@ private fun Screen(state: UiState, now: Instant, onRefresh: () -> Unit) {
                 Spacer(Modifier.size(4.dp))
                 OutlinedButton(
                     onClick = { awm.requestPinAppWidget(ComponentName(context, RecWidgetReceiver::class.java), null, null) },
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.5.dp, Palette.Lime),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Lime),
-                ) { Text("Add widget to home screen", fontWeight = FontWeight.SemiBold) }
+                    shape = RoundedCornerShape(50),
+                    border = BorderStroke(1.5.dp, Palette.Red),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.RedLight),
+                ) { Text("Add widget to home screen", fontWeight = FontWeight.Black) }
             }
         }
     }
@@ -193,7 +201,7 @@ private fun RoomCard(room: Room, stale: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Palette.Card, RoundedCornerShape(22.dp))
+            .background(Palette.Card, RoundedCornerShape(26.dp))
             .padding(start = 14.dp, end = 18.dp, top = 14.dp, bottom = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -206,28 +214,19 @@ private fun RoomCard(room: Room, stale: Boolean) {
                         pct == null -> append("?")
                         else -> {
                             append("${pct.roundToInt()}")
-                            withStyle(SpanStyle(fontSize = 13.sp, color = Palette.Muted, fontWeight = FontWeight.SemiBold)) {
+                            withStyle(SpanStyle(fontSize = 12.sp, color = Palette.Muted, fontWeight = FontWeight.Bold)) {
                                 append("%")
                             }
                         }
                     }
                 },
-                color = Palette.Text, fontSize = 26.sp, fontFamily = Condensed, fontWeight = FontWeight.Bold,
+                color = Palette.Text, fontSize = 24.sp, fontFamily = Display, fontWeight = FontWeight.Black,
             )
         }
         Spacer(Modifier.size(16.dp))
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(room.facility.label.uppercase(), color = Palette.Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
-            Text(room.label, color = Palette.Text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            Text(
-                when {
-                    room.closed -> "Closed"
-                    room.count != null && room.capacity != null -> "${room.count} of ${room.capacity} people"
-                    room.count != null -> "${room.count} people"
-                    else -> "No count available"
-                },
-                color = Palette.Muted, fontSize = 13.sp,
-            )
+            Text(room.facility.label.uppercase(), color = Palette.Tag, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.8.sp)
+            Text(room.label, color = Palette.Text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -235,7 +234,7 @@ private fun RoomCard(room: Room, stale: Boolean) {
 @Composable
 private fun Ring(fraction: Float, color: androidx.compose.ui.graphics.Color) {
     Canvas(Modifier.size(76.dp)) {
-        val stroke = 7.dp.toPx()
+        val stroke = 7.6.dp.toPx()
         val inset = stroke / 2
         val arcSize = Size(size.width - stroke, size.height - stroke)
         drawArc(Palette.Track, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))

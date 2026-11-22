@@ -29,6 +29,7 @@ class LiveParserTest {
     @Test fun `filter keeps only the three chosen rooms in order`() {
         val rooms = LiveParser.parse(sample()).rooms
         assertEquals(listOf("2nd Floor", "3rd Floor Weight Room", "4th Floor"), rooms.map { it.label })
+        assertEquals(listOf("2nd Floor", "3rd Floor", "4th Floor"), rooms.map { it.tileLabel })
         assertEquals(listOf(17, 11, 11), rooms.map { it.count })
         assertEquals(listOf(105, 65, 60), rooms.map { it.capacity })
         assertEquals(
@@ -46,7 +47,7 @@ class LiveParserTest {
 
     @Test fun `busiest sorts by percent`() {
         val top = LiveParser.parse(sample()).busiest(3).map { it.shortLabel }
-        assertEquals(listOf("SB 4th Floor", "3rd Fl Weights", "2nd Floor"), top)
+        assertEquals(listOf("SB 4th Floor", "MRN 3rd Floor", "MRN 2nd Floor"), top)
     }
 
     @Test fun `offsetless updated time is Boston local time`() {

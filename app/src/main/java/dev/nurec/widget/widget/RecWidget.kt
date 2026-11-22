@@ -123,13 +123,13 @@ private fun PercentText(room: Room, sizeDp: Float, color: Color, pctColor: Color
     val context = LocalContext.current
     val pct = room.percent
     when {
-        room.closed -> WText("—", Face.DISPLAY, sizeDp, color, description = "Closed")
-        pct == null -> WText("?", Face.DISPLAY, sizeDp, color, description = "Unknown")
+        room.closed -> WText("—", Face.BLACK, sizeDp, color, description = "Closed")
+        pct == null -> WText("?", Face.BLACK, sizeDp, color, description = "Unknown")
         else -> Row(verticalAlignment = Alignment.Top) {
-            val n = Glyphs.render(context, "${pct.roundToInt()}", Face.DISPLAY, sizeDp)
+            val n = Glyphs.render(context, "${pct.roundToInt()}", Face.BLACK, sizeDp)
             val p = Glyphs.render(
-                context, "%", if (smallPct) Face.DISPLAY_SEMIBOLD else Face.DISPLAY,
-                if (smallPct) sizeDp * 0.5f else sizeDp, lineFace = Face.DISPLAY, lineSizeDp = sizeDp,
+                context, "%", if (smallPct) Face.BOLD else Face.BLACK,
+                if (smallPct) sizeDp * 0.5f else sizeDp, lineFace = Face.BLACK, lineSizeDp = sizeDp,
             )
             Image(
                 ImageProvider(n.bitmap), "${pct.roundToInt()} percent full",
@@ -169,27 +169,27 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
     val showTag = ringFor(tileExtra + tagExtra) >= 44.dp
     val ring = ringFor(if (showTag) tileExtra + tagExtra else tileExtra).coerceAtLeast(28.dp)
     Column(
-        modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(24.dp).padding(pad),
+        modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(26.dp).padding(pad),
     ) {
         Row(GlanceModifier.fillMaxWidth().height(header), verticalAlignment = Alignment.CenterVertically) {
             // Measure the header; shorten "Updated 11:02" → "11:02" (then drop "LIVE") if it won't fit.
             val context = LocalContext.current
             val avail = width - pad * 2 - 36.dp - 8.dp - 8.dp
-            val title = Glyphs.widthDp(context, "NU REC", Face.DISPLAY, 21f, 0.06f)
-            val live = 25f + Glyphs.widthDp(context, "LIVE", Face.BODY_BOLD, 10f, 0.14f)
+            val title = Glyphs.widthDp(context, "NU Rec", Face.BLACK, 21f)
+            val live = 8f + 16f + 3f + 10f + Glyphs.widthDp(context, "LIVE", Face.BLACK, 9.5f, 0.12f)
             val full = state.updatedText()
             val short = full.substringAfterLast(' ')
-            val fullW = Glyphs.widthDp(context, full, Face.BODY, 11f)
-            val shortW = Glyphs.widthDp(context, short, Face.BODY, 11f)
+            val fullW = Glyphs.widthDp(context, full, Face.REGULAR, 11f)
+            val shortW = Glyphs.widthDp(context, short, Face.REGULAR, 11f)
             val (updated, showLive) = when {
                 title + live + fullW <= avail.value -> full to true
                 title + live + shortW <= avail.value -> short to true
                 else -> short to false
             }
-            WText("NU REC", Face.DISPLAY, 21f, Palette.Text, tracking = 0.06f)
+            WText("NU Rec", Face.BLACK, 21f, Palette.Text)
             Status(state, stale, wide = showLive)
             Spacer(GlanceModifier.defaultWeight())
-            WText(updated, Face.BODY, 11f, Palette.Muted, description = full)
+            WText(updated, Face.REGULAR, 11f, Palette.Muted, description = full)
             Spacer(GlanceModifier.width(8.dp))
             RefreshButton(state, 36.dp)
         }
@@ -199,8 +199,8 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
         } else Row(GlanceModifier.fillMaxSize()) {
             val context = LocalContext.current
             val textW = (tileW - 6.dp).value
-            val nameDp = Glyphs.fitSize(context, rooms.map { tileName(it, showTag) }, Face.BODY_SEMIBOLD, 12f, 9f, textW)
-            val tagDp = Glyphs.fitSize(context, rooms.map { it.facility.tileTag() }, Face.BODY_SEMIBOLD, 9.5f, 7f, textW + 6f, tracking = 0.14f)
+            val nameDp = Glyphs.fitSize(context, rooms.map { tileName(it, showTag) }, Face.BOLD, 12f, 9f, textW)
+            val tagDp = Glyphs.fitSize(context, rooms.map { it.facility.tileTag() }, Face.BLACK, 9.5f, 7f, textW + 6f, tracking = 0.18f)
             rooms.forEachIndexed { i, room ->
                 if (i > 0) Spacer(GlanceModifier.width(gap))
                 Column(
@@ -211,7 +211,7 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
                     if (showTag) {
                         // Facility label under the card.
                         Spacer(GlanceModifier.height(6.dp))
-                        WText(room.facility.tileTag(), Face.BODY_SEMIBOLD, tagDp, Palette.Muted, tracking = 0.14f)
+                        WText(room.facility.tileTag(), Face.BLACK, tagDp, Palette.Tag, tracking = 0.18f)
                     }
                 }
             }
@@ -229,10 +229,10 @@ private fun Compact(state: UiState, stale: Boolean, width: Dp, height: Dp) {
     val rowH = ((height - pad * 2 - header - 6.dp - rowGap * 2) / 3).coerceIn(20.dp, 40.dp)
     val numDp = (rowH.value * 0.8f).coerceAtMost(24f)
     Column(
-        modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(22.dp).padding(pad),
+        modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(26.dp).padding(pad),
     ) {
         Row(GlanceModifier.fillMaxWidth().height(header), verticalAlignment = Alignment.CenterVertically) {
-            WText("NU REC", Face.DISPLAY, 17f, Palette.Text, tracking = 0.06f)
+            WText("NU Rec", Face.BLACK, 17f, Palette.Text)
             Status(state, stale, wide = false)
             Spacer(GlanceModifier.defaultWeight())
             RefreshButton(state, 30.dp)
@@ -240,10 +240,13 @@ private fun Compact(state: UiState, stale: Boolean, width: Dp, height: Dp) {
         Spacer(GlanceModifier.height(6.dp))
         if (rows.isEmpty()) EmptyBody()
         val context = LocalContext.current
-        val numW = rows.maxOfOrNull { Glyphs.widthDp(context, "${(it.percent ?: 0.0).roundToInt()}%", Face.DISPLAY, numDp) } ?: 0f
+        val numW = rows.maxOfOrNull {
+            Glyphs.widthDp(context, "${(it.percent ?: 0.0).roundToInt()}", Face.BLACK, numDp) +
+                Glyphs.widthDp(context, "%", Face.BLACK, numDp * 0.5f)
+        } ?: 0f
         val numCol = (numW + 6f).dp
         val nameW = (width - pad * 2 - numCol).value
-        val nameDp = Glyphs.fitSize(context, rows.map { it.shortLabel }, Face.BODY_SEMIBOLD, 11f, 9f, nameW)
+        val nameDp = Glyphs.fitSize(context, rows.map { it.shortLabel }, Face.BOLD, 11f, 9f, nameW)
         rows.forEachIndexed { i, room ->
             if (i > 0) Spacer(GlanceModifier.height(rowGap))
             CompactRow(room, stale, rowH, numDp, numCol, nameW.dp, nameDp)
@@ -261,16 +264,28 @@ private fun Status(state: UiState, stale: Boolean, wide: Boolean) {
         else -> null
     }
     if (off != null) {
-        Spacer(GlanceModifier.width(6.dp))
-        Box(GlanceModifier.background(Palette.Chip).cornerRadius(8.dp).padding(horizontal = 6.dp, vertical = 2.dp)) {
-            WText(off, Face.BODY_BOLD, if (wide) 9.5f else 8.5f, Palette.Text, tracking = 0.14f)
+        Spacer(GlanceModifier.width(8.dp))
+        Box(GlanceModifier.background(Palette.Chip).cornerRadius(12.dp).padding(horizontal = 8.dp, vertical = 3.dp)) {
+            WText(off, Face.BLACK, if (wide) 9.5f else 8.5f, Palette.Body, tracking = 0.12f)
         }
         return
     }
-    // The pulse box includes room for the halo (mockup: 8px dot, 7px spread).
-    Spacer(GlanceModifier.width(if (wide) 5.dp else 3.dp))
-    AndroidRemoteViews(remoteViews = Animated.pulse(context), modifier = GlanceModifier.size(if (wide) 20.dp else 16.dp))
-    if (wide) WText("LIVE", Face.BODY_BOLD, 10f, Palette.Lime, tracking = 0.14f)
+    if (wide) {
+        // Red-tinted pill: pulsing dot + LIVE.
+        Spacer(GlanceModifier.width(8.dp))
+        Row(
+            modifier = GlanceModifier.background(Palette.LivePill).cornerRadius(12.dp)
+                .padding(start = 4.dp, end = 9.dp, top = 1.dp, bottom = 1.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AndroidRemoteViews(remoteViews = Animated.pulse(context), modifier = GlanceModifier.size(16.dp))
+            Spacer(GlanceModifier.width(3.dp))
+            WText("LIVE", Face.BLACK, 9.5f, Palette.RedLight, tracking = 0.12f)
+        }
+    } else {
+        Spacer(GlanceModifier.width(3.dp))
+        AndroidRemoteViews(remoteViews = Animated.pulse(context), modifier = GlanceModifier.size(16.dp))
+    }
 }
 
 @Composable
@@ -289,13 +304,13 @@ private fun RefreshButton(state: UiState, size: Dp) {
             )
         } else {
             Box(
-                modifier = GlanceModifier.size(size - 8.dp).background(Palette.Lime).cornerRadius(12.dp),
+                modifier = GlanceModifier.size(size - 6.dp).background(Palette.Red).cornerRadius((size - 6.dp) / 2),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
                     provider = ImageProvider(R.drawable.ic_refresh),
                     contentDescription = "Refresh now",
-                    colorFilter = ColorFilter.tint(ColorProvider(Palette.OnLime)),
+                    colorFilter = ColorFilter.tint(ColorProvider(Color.White)),
                     modifier = GlanceModifier.size(if (size >= 36.dp) 16.dp else 14.dp),
                 )
             }
@@ -324,7 +339,7 @@ private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Flo
             PercentText(room, ring.value * 0.36f, Palette.Text, Palette.Muted, smallPct = true)
         }
         Spacer(GlanceModifier.height(7.dp))
-        WText(tileName(room, tagged), Face.BODY_SEMIBOLD, nameDp, Palette.Text, maxWidth = tileText)
+        WText(tileName(room, tagged), Face.BOLD, nameDp, Palette.Text, maxWidth = tileText)
     }
 }
 
@@ -333,10 +348,10 @@ private fun CompactRow(room: Room, stale: Boolean, rowH: Dp, numDp: Float, numCo
     val color = Palette.forLevel(levelFor(room.percent, room.closed), stale)
     Row(GlanceModifier.fillMaxWidth().height(rowH), verticalAlignment = Alignment.CenterVertically) {
         Box(GlanceModifier.width(numCol)) {
-            PercentText(room, numDp, color, color, smallPct = false)
+            PercentText(room, numDp, Palette.Text, Palette.Muted, smallPct = true)
         }
         Column(GlanceModifier.defaultWeight()) {
-            WText(room.shortLabel, Face.BODY_SEMIBOLD, nameDp, Palette.Text, maxWidth = nameWidth)
+            WText(room.shortLabel, Face.BOLD, nameDp, Palette.Text, maxWidth = nameWidth)
             Spacer(GlanceModifier.height(3.dp))
             LinearProgressIndicator(
                 progress = ((room.percent ?: 0.0) / 100).toFloat().coerceIn(0.02f, 1f),
@@ -355,12 +370,12 @@ private fun EmptyBody() {
             .clickable(actionRunCallback<RefreshAction>()),
         contentAlignment = Alignment.Center,
     ) {
-        WText("Tap refresh to load occupancy", Face.BODY, 12f, Palette.Muted)
+        WText("Tap refresh to load occupancy", Face.REGULAR, 12f, Palette.Muted)
     }
 }
 
-/** With the facility label above, "SB 4th Floor" can drop its prefix. */
-private fun tileName(room: Room, tagged: Boolean): String = if (tagged) room.label.takeIf { room.facility == Facility.SQUASHBUSTERS } ?: room.shortLabel else room.shortLabel
+/** Tiles say "3rd Floor" with the facility under the card; without that label, keep the prefix. */
+private fun tileName(room: Room, tagged: Boolean): String = if (tagged) room.tileLabel else room.shortLabel
 
 private fun Facility.tileTag(): String = when (this) {
     Facility.MARINO -> "MARINO"

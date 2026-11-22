@@ -3,8 +3,8 @@
     android:viewportWidth="108" android:viewportHeight="108">
     <!-- track -->
     <path android:pathData="M54,30a24,24 0,1 1,0 48a24,24 0,1 1,0 -48"
-        android:strokeColor="#FF2A2D33" android:strokeWidth="8" />
+        android:strokeColor="#FF2F2627" android:strokeWidth="8" />
     <!-- ~65% arc in lime -->
     <path android:pathData="M54,30a24,24 0,1 1,-19.4 38.1"
-        android:strokeColor="#FFB6F23C" android:strokeWidth="8" android:strokeLineCap="round" />
+        android:strokeColor="#FFFF3347" android:strokeWidth="8" android:strokeLineCap="round" />
 </vector>
