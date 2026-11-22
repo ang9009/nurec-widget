@@ -366,7 +366,7 @@ private fun tileName(room: Room, tagged: Boolean): String = if (tagged) room.lab
 
 private fun Facility.tileTag(): String = when (this) {
     Facility.MARINO -> "MARINO"
-    Facility.SQUASHBUSTERS -> "SQUASHBUSTERS"
+    Facility.SQUASHBUSTERS -> "SQUASH"
     Facility.OTHER -> "OTHER"
 }
 
