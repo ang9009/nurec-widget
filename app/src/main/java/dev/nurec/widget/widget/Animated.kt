@@ -36,7 +36,10 @@ object Animated {
      * ring draining, then the idle button. The widget is redrawn when the cooldown ends; the
      * trailing idle frames cover any delay so it never wraps back to "0:15".
      */
-    fun countdown(context: Context, left: Duration, textDp: Float): RemoteViews {
+    fun countdown(context: Context, left: Duration, buttonDp: Float): RemoteViews {
+        // Mockup: label ≈ 30 % of the button; the circle is inset 4dp on each side.
+        val textDp = buttonDp * 0.30f
+        val circleDp = buttonDp - 8f
         val total = UiState.COOLDOWN.seconds.toInt()
         val secs = ceil(left.toMillis() / 1000.0).toInt().coerceIn(1, total)
         val rv = RemoteViews(context.packageName, R.layout.flipper_countdown)
@@ -44,7 +47,7 @@ object Animated {
             val f = RemoteViews(context.packageName, R.layout.countdown_frame)
             val step = (s * 15f / total).toInt().coerceIn(1, 15) // ring art has 15 steps
             f.setImageViewResource(R.id.ring, drawable(context, "btn_ring_%02d".format(step)))
-            val label = Glyphs.render(context, "0:%02d".format(s), Glyphs.Face.BLACK, textDp)
+            val label = Glyphs.renderInBox(context, "0:%02d".format(s), Glyphs.Face.BLACK, textDp, circleDp)
             f.setImageViewBitmap(R.id.label, label.bitmap)
             f.setInt(R.id.label, "setColorFilter", Palette.Muted.toArgb())
             rv.addView(R.id.flipper, f)

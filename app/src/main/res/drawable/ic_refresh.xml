@@ -2,9 +2,9 @@
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
     <path android:pathData="M21,12a9,9 0,1 1,-2.64 -6.36"
-        android:strokeColor="#FF000000" android:strokeWidth="2.4"
+        android:strokeColor="#FF000000" android:strokeWidth="2.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
     <path android:pathData="M21,3v6h-6"
-        android:strokeColor="#FF000000" android:strokeWidth="2.4"
+        android:strokeColor="#FF000000" android:strokeWidth="2.6"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

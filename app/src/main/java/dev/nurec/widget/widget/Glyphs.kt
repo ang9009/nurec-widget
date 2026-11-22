@@ -97,4 +97,17 @@ object Glyphs {
     /** Height in dp of capital letters (and lining digits) at [sizeDp]. */
     fun capDp(context: Context, face: Face, sizeDp: Float): Float =
         capHeightPx(paint(context, face, sizeDp, 0f)) / context.resources.displayMetrics.density
+
+    /**
+     * Text centered (by cap height) in a [boxDp]×[boxDp] mask. Shown with fitCenter, the view
+     * scales the whole box, so the text keeps its size relative to the box on any launcher.
+     */
+    fun renderInBox(context: Context, text: String, face: Face, sizeDp: Float, boxDp: Float): Mask {
+        val density = context.resources.displayMetrics.density
+        val p = paint(context, face, sizeDp, 0f).apply { textAlign = Paint.Align.CENTER }
+        val px = ceil(boxDp * density).toInt().coerceAtLeast(1)
+        val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ALPHA_8)
+        Canvas(bmp).drawText(text, px / 2f, px / 2f + capHeightPx(p) / 2f, p)
+        return Mask(bmp, boxDp, boxDp)
+    }
 }

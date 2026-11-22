@@ -339,19 +339,20 @@ private fun RefreshButton(state: UiState, size: Dp) {
         if (!left.isZero) {
             // Ticks "0:15" → "0:01" with a draining ring, then shows the idle button.
             AndroidRemoteViews(
-                remoteViews = Animated.countdown(context, left, if (size >= 36.dp) 14f else 12f),
+                remoteViews = Animated.countdown(context, left, size.value),
                 modifier = GlanceModifier.size(size),
             )
         } else {
             Box(
-                modifier = GlanceModifier.size(size - 6.dp).background(Palette.Red).cornerRadius((size - 6.dp) / 2),
+                modifier = GlanceModifier.size(size - 8.dp).background(Palette.Red).cornerRadius((size - 8.dp) / 2),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
                     provider = ImageProvider(R.drawable.ic_refresh),
                     contentDescription = "Refresh now",
                     colorFilter = ColorFilter.tint(ColorProvider(Color.White)),
-                    modifier = GlanceModifier.size(if (size >= 36.dp) 16.dp else 14.dp),
+                    // Icon ≈ 56 % of the red circle (mockup ~53 %).
+                    modifier = GlanceModifier.size((size - 8.dp) * 0.56f),
                 )
             }
         }

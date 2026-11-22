@@ -15,6 +15,6 @@
         android:layout_height="match_parent"
         android:layout_margin="4dp"
         android:background="@drawable/btn_bg_cooling"
-        android:scaleType="center"
+        android:scaleType="fitCenter"
         android:importantForAccessibility="no" />
 </FrameLayout>
