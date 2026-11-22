@@ -157,13 +157,14 @@ private fun WidgetBody(state: UiState) {
 private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
     val pad = 12.dp
     val header = 36.dp
-    val gap = 8.dp
+    val gap = 8.dp        // between tiles
+    val headerGap = 4.dp  // header → tiles
     val rooms = state.snapshot?.rooms.orEmpty()
-    // Tile = 8 pad + ring + 4 + name 14 + 1 + count 12 + 8 pad
-    val tileExtra = 47.dp
-    val tagExtra = 16.dp // facility label under each card (11) + gap (5)
+    // Tile = 10 pad + ring + 7 + name 15 + 10 pad
+    val tileExtra = 42.dp
+    val tagExtra = 17.dp // facility label under each card (11) + gap (6)
     val tileW = (width - pad * 2 - gap * 2) / 3
-    fun ringFor(extra: Dp) = minOf(height - pad * 2 - header - gap - extra, tileW - 16.dp, 72.dp)
+    fun ringFor(extra: Dp) = minOf(height - pad * 2 - header - headerGap - extra, tileW - 18.dp, 76.dp)
     // Show the facility label only if the ring can stay a readable size.
     val showTag = ringFor(tileExtra + tagExtra) >= 44.dp
     val ring = ringFor(if (showTag) tileExtra + tagExtra else tileExtra).coerceAtLeast(28.dp)
@@ -192,7 +193,7 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
             Spacer(GlanceModifier.width(8.dp))
             RefreshButton(state, 36.dp)
         }
-        Spacer(GlanceModifier.height(gap))
+        Spacer(GlanceModifier.height(headerGap))
         if (rooms.isEmpty()) {
             EmptyBody()
         } else Row(GlanceModifier.fillMaxSize()) {
@@ -200,17 +201,16 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
             val textW = (tileW - 6.dp).value
             val nameDp = Glyphs.fitSize(context, rooms.map { tileName(it, showTag) }, Face.BODY_SEMIBOLD, 12f, 9f, textW)
             val tagDp = Glyphs.fitSize(context, rooms.map { it.facility.tileTag() }, Face.BODY_SEMIBOLD, 9.5f, 7f, textW + 6f, tracking = 0.14f)
-            val countDp = Glyphs.fitSize(context, rooms.map(::countText), Face.BODY, 10.5f, 8.5f, textW)
             rooms.forEachIndexed { i, room ->
                 if (i > 0) Spacer(GlanceModifier.width(gap))
                 Column(
                     modifier = GlanceModifier.defaultWeight().fillMaxHeight(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Tile(room, stale, ring, textW.dp, nameDp, countDp, showTag, GlanceModifier.fillMaxWidth().defaultWeight())
+                    Tile(room, stale, ring, textW.dp, nameDp, showTag, GlanceModifier.fillMaxWidth().defaultWeight())
                     if (showTag) {
                         // Facility label under the card.
-                        Spacer(GlanceModifier.height(5.dp))
+                        Spacer(GlanceModifier.height(6.dp))
                         WText(room.facility.tileTag(), Face.BODY_SEMIBOLD, tagDp, Palette.Muted, tracking = 0.14f)
                     }
                 }
@@ -304,12 +304,12 @@ private fun RefreshButton(state: UiState, size: Dp) {
 }
 
 @Composable
-private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Float, countDp: Float, tagged: Boolean, modifier: GlanceModifier) {
+private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Float, tagged: Boolean, modifier: GlanceModifier) {
     val context = LocalContext.current
     val pct = room.percent
     val color = Palette.forLevel(levelFor(pct, room.closed), stale)
     Column(
-        modifier = modifier.background(Palette.Tile).cornerRadius(16.dp).padding(vertical = 8.dp, horizontal = 3.dp),
+        modifier = modifier.background(Palette.Tile).cornerRadius(18.dp).padding(vertical = 10.dp, horizontal = 3.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -323,10 +323,8 @@ private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Flo
             )
             PercentText(room, ring.value * 0.36f, Palette.Text, Palette.Muted, smallPct = true)
         }
-        Spacer(GlanceModifier.height(4.dp))
+        Spacer(GlanceModifier.height(7.dp))
         WText(tileName(room, tagged), Face.BODY_SEMIBOLD, nameDp, Palette.Text, maxWidth = tileText)
-        Spacer(GlanceModifier.height(1.dp))
-        WText(countText(room), Face.BODY, countDp, Palette.Muted, maxWidth = tileText)
     }
 }
 
@@ -368,11 +366,4 @@ private fun Facility.tileTag(): String = when (this) {
     Facility.MARINO -> "MARINO"
     Facility.SQUASHBUSTERS -> "SQUASH"
     Facility.OTHER -> "OTHER"
-}
-
-private fun countText(room: Room): String = when {
-    room.closed -> "Closed"
-    room.count != null && room.capacity != null -> "${room.count} of ${room.capacity}"
-    room.count != null -> "${room.count} people"
-    else -> "No count"
 }
