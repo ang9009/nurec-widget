@@ -125,12 +125,12 @@ class UiStateTest {
         assertTrue(UiState(snap, updated, true, null).isStale(updated))
     }
 
-    @Test fun `cooldown counts down from two minutes`() {
+    @Test fun `cooldown counts down from fifteen seconds`() {
         val t0 = Instant.parse("2026-11-22T15:00:00Z")
         val s = UiState(null, null, false, t0)
-        assertEquals(Duration.ofMinutes(2), s.cooldownRemaining(t0))
-        assertEquals(Duration.ofSeconds(18), s.cooldownRemaining(t0.plusSeconds(102)))
-        assertTrue(s.cooldownRemaining(t0.plusSeconds(120)).isZero)
+        assertEquals(Duration.ofSeconds(15), s.cooldownRemaining(t0))
+        assertEquals(Duration.ofSeconds(3), s.cooldownRemaining(t0.plusSeconds(12)))
+        assertTrue(s.cooldownRemaining(t0.plusSeconds(15)).isZero)
         assertTrue(UiState.EMPTY.cooldownRemaining(t0).isZero)
         assertEquals("1:42", UiState.formatCountdown(Duration.ofSeconds(102)))
     }

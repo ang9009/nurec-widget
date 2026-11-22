@@ -35,7 +35,7 @@ data class UiState(
 
     companion object {
         val STALE_AFTER: Duration = Duration.ofHours(2)
-        val COOLDOWN: Duration = Duration.ofMinutes(2)
+        val COOLDOWN: Duration = Duration.ofSeconds(15)
         private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
         val EMPTY = UiState(null, null, false, null)
 

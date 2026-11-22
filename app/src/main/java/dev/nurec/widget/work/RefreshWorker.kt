@@ -15,6 +15,7 @@ import androidx.work.workDataOf
 import dev.nurec.widget.data.RecRepository
 import dev.nurec.widget.data.UiState
 import dev.nurec.widget.widget.RecWidget
+import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
 /** Fetches the API, caches it, redraws the widget. */
@@ -34,6 +35,13 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         // Redraw either way: on failure the widget shows cached data plus the offline marker.
         RecWidget().updateAll(applicationContext)
         scheduleCooldownEnd(applicationContext)
+        // The cooldown is short, so stay alive and unlock the button right on time.
+        // (RedrawWorker above is the backup if this worker is stopped early.)
+        val left = repo.current().cooldownRemaining()
+        if (!left.isZero) {
+            delay(left.toMillis() + 250)
+            RecWidget().updateAll(applicationContext)
+        }
         return Result.success()
     }
 

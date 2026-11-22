@@ -13,7 +13,8 @@ Data comes from the unofficial `https://nu-rec-board.netlify.app/api/live` (upst
 - **Small widget (2×2):** rooms sorted busiest first, big colored percent plus a bar.
 - **Colors:** lime < 40%, amber 40–70%, coral > 70%, grey = closed / unknown / offline.
 - **Refresh:** automatic every 30 min on any network, plus a tap-to-refresh button.
-- **Cooldown:** after any fetch (tap, app button or automatic), refresh is locked for 2 minutes. The widget shows `2m`/`1m` with a draining ring; the app shows `Wait 1:42`.
+- **Cooldown:** after any fetch (tap, app button or automatic), refresh is locked for 15 seconds. The widget button counts down `0:15` → `0:01` with a draining ring; the app shows `Wait 0:12`.
+- **LIVE dot:** pulses every 2 s. Widgets can't animate, so both the pulse and the countdown are pre-drawn frames in a `ViewFlipper` (`widget/Animated.kt`), which only runs while the widget is on screen.
 - **Offline:** the last good response is cached. If a fetch fails or the data is > 2 h old, the chip switches from `LIVE` to `OFFLINE` and the rings go grey. Nothing blanks.
 
 To change which rooms are shown, edit `RoomFilter.SHOWN` in

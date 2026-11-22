@@ -16,6 +16,7 @@ import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.LinearProgressIndicator
@@ -150,21 +151,33 @@ private fun Header(state: UiState, stale: Boolean, large: Boolean) {
         Column(GlanceModifier.defaultWeight()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 FontText(TextRun("NU REC", Face.DISPLAY, if (large) 24f else 18f, Palette.Text, tracking = 0.06f))
-                Spacer(GlanceModifier.width(8.dp))
-                val (label, bg, fg) = when {
-                    state.snapshot == null -> Triple("NO DATA", Palette.Chip, Palette.Text)
-                    stale -> Triple("OFFLINE", Palette.Chip, Palette.Text)
-                    else -> Triple("LIVE", Palette.Lime, Palette.OnLime)
+                val offLabel = when {
+                    state.snapshot == null -> "NO DATA"
+                    stale -> "OFFLINE"
+                    else -> null
                 }
-                if (large || label != "LIVE") {
+                if (offLabel != null) {
+                    Spacer(GlanceModifier.width(8.dp))
                     Box(
-                        modifier = GlanceModifier.background(bg).cornerRadius(10.dp)
+                        modifier = GlanceModifier.background(Palette.Chip).cornerRadius(10.dp)
                             .padding(horizontal = 7.dp, vertical = 2.dp),
                     ) {
-                        FontText(TextRun(label, Face.BODY_BOLD, 10f, fg, tracking = 0.14f))
+                        FontText(TextRun(offLabel, Face.BODY_BOLD, 10f, Palette.Text, tracking = 0.14f))
                     }
                 } else {
-                    Box(GlanceModifier.size(6.dp).background(Palette.Lime).cornerRadius(3.dp)) {}
+                    // Pulsing dot; its box includes room for the halo (mockup: 8px dot, 7px spread).
+                    val context = LocalContext.current
+                    val dot = if (large) 8f else 6f
+                    val box = if (large) 22f else 18f
+                    Spacer(GlanceModifier.width(2.dp))
+                    AndroidRemoteViews(
+                        remoteViews = Animated.pulse(context, dot, box),
+                        modifier = GlanceModifier.size(box.dp),
+                    )
+                    if (large) {
+                        Spacer(GlanceModifier.width(2.dp))
+                        FontText(TextRun("LIVE", Face.BODY_SEMIBOLD, 11f, Palette.Lime, tracking = 0.14f))
+                    }
                 }
             }
             if (large || state.snapshot == null || stale) {
@@ -181,33 +194,25 @@ private fun RefreshButton(state: UiState, size: Dp) {
     val context = LocalContext.current
     val left = state.cooldownRemaining()
     val cooling = !left.isZero
-    val px = (size.value * context.resources.displayMetrics.density).roundToInt()
+    val corner = if (size > 40.dp) 20.dp else 12.dp
     Box(
         modifier = GlanceModifier.size(size).clickable(actionRunCallback<RefreshAction>()),
         contentAlignment = Alignment.Center,
     ) {
         if (cooling) {
-            val fraction = left.toMillis().toFloat() / UiState.COOLDOWN.toMillis()
-            Image(
-                provider = ImageProvider(RingBitmap.draw(px, px * 0.05f, fraction, Palette.Lime)),
-                contentDescription = null,
+            // Ticks "0:15" → "0:01" with a draining ring, then shows the idle button.
+            AndroidRemoteViews(
+                remoteViews = Animated.countdown(context, left, size.value, corner.value),
                 modifier = GlanceModifier.size(size),
             )
-        }
-        Box(
+        } else Box(
             modifier = GlanceModifier
                 .size(size - 8.dp)
-                .background(if (cooling) Palette.Tile else Palette.Lime)
-                .cornerRadius(if (size > 40.dp) 20.dp else 12.dp),
+                .background(Palette.Lime)
+                .cornerRadius(corner),
             contentAlignment = Alignment.Center,
         ) {
-            if (cooling) {
-                val mins = (left.seconds + 59) / 60
-                FontText(
-                    TextRun("${mins}m", Face.DISPLAY_SEMIBOLD, 15f, Palette.Muted),
-                    description = "Refresh available in $mins minutes",
-                )
-            } else {
+            run {
                 Image(
                     provider = ImageProvider(R.drawable.ic_refresh),
                     contentDescription = "Refresh now",
