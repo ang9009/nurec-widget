@@ -106,9 +106,10 @@ private fun WText(
     maxWidth: Dp? = null,
     tracking: Float = 0f,
     description: String? = text,
+    tight: Boolean = false,
 ) {
     val context = LocalContext.current
-    val m = Glyphs.render(context, text, face, sizeDp, tracking, maxWidth?.value)
+    val m = Glyphs.render(context, text, face, sizeDp, tracking, maxWidth?.value, tight = tight)
     Image(
         provider = ImageProvider(m.bitmap),
         contentDescription = description,
@@ -119,17 +120,17 @@ private fun WText(
 
 /** "17" with a half-size "%" on the same baseline. */
 @Composable
-private fun PercentText(room: Room, sizeDp: Float, color: Color, pctColor: Color, smallPct: Boolean) {
+private fun PercentText(room: Room, sizeDp: Float, color: Color, pctColor: Color, smallPct: Boolean, tight: Boolean = false) {
     val context = LocalContext.current
     val pct = room.percent
     when {
-        room.closed -> WText("—", Face.BLACK, sizeDp, color, description = "Closed")
-        pct == null -> WText("?", Face.BLACK, sizeDp, color, description = "Unknown")
+        room.closed -> WText("—", Face.BLACK, sizeDp, color, description = "Closed", tight = tight)
+        pct == null -> WText("?", Face.BLACK, sizeDp, color, description = "Unknown", tight = tight)
         else -> Row(verticalAlignment = Alignment.Top) {
-            val n = Glyphs.render(context, "${pct.roundToInt()}", Face.BLACK, sizeDp)
+            val n = Glyphs.render(context, "${pct.roundToInt()}", Face.BLACK, sizeDp, tight = tight)
             val p = Glyphs.render(
                 context, "%", if (smallPct) Face.BOLD else Face.BLACK,
-                if (smallPct) sizeDp * 0.5f else sizeDp, lineFace = Face.BLACK, lineSizeDp = sizeDp,
+                if (smallPct) sizeDp * 0.5f else sizeDp, lineFace = Face.BLACK, lineSizeDp = sizeDp, tight = tight,
             )
             Image(
                 ImageProvider(n.bitmap), "${pct.roundToInt()} percent full",
@@ -219,37 +220,76 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
     }
 }
 
-/** 2×2: header, then busiest-first rows that share the remaining height. */
+/**
+ * 2×2: header, then busiest-first rows spread evenly over the remaining height.
+ * Each row: big percent | (name over bar). The name+bar block is exactly as tall as the digits:
+ * name cap-top aligns with digit tops, bar bottom with the digit baseline.
+ */
 @Composable
 private fun Compact(state: UiState, stale: Boolean, width: Dp, height: Dp) {
-    val pad = 10.dp
-    val header = 30.dp
+    val context = LocalContext.current
+    val pad = 12.dp
+    val header = 32.dp
     val rows = state.snapshot?.busiest(3).orEmpty()
-    val rowGap = 4.dp
-    val rowH = ((height - pad * 2 - header - 6.dp - rowGap * 2) / 3).coerceIn(20.dp, 40.dp)
-    val numDp = (rowH.value * 0.8f).coerceAtMost(24f)
+    // Digits up to 28dp, smaller if the widget is short (leave ≥ 8dp around each row).
+    val perRow = (height - pad * 2 - header - 10.dp) / 3
+    val numDp = minOf(28f, (perRow.value - 8f) / 0.72f).coerceAtLeast(16f)
+    val numCap = Glyphs.capDp(context, Face.BLACK, numDp)
+    val numW = rows.maxOfOrNull {
+        Glyphs.widthDp(context, "${(it.percent ?: 0.0).roundToInt()}", Face.BLACK, numDp) +
+            Glyphs.widthDp(context, "%", Face.BOLD, numDp * 0.5f)
+    } ?: 0f
+    val numCol = (numW + 1f).dp
+    val gutter = 12.dp
+    val nameW = (width - pad * 2 - numCol - gutter).value
+    val barH = 4f
+    // Name as large as fits (≤ 13dp), but leave ≥ 5dp between it and the bar.
+    var nameDp = Glyphs.fitSize(context, rows.map { it.shortLabel }, Face.BOLD, 13f, 9f, nameW)
+    while (nameDp > 9f && Glyphs.capDp(context, Face.BOLD, nameDp) + 5f + barH > numCap) nameDp -= 0.5f
+    val nameGap = (numCap - Glyphs.capDp(context, Face.BOLD, nameDp) - barH).coerceAtLeast(2f)
     Column(
-        modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(26.dp).padding(pad),
+        modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(26.dp)
+            .padding(start = pad, end = pad, top = pad, bottom = pad + 2.dp),
     ) {
         Row(GlanceModifier.fillMaxWidth().height(header), verticalAlignment = Alignment.CenterVertically) {
-            WText("NU Rec", Face.BLACK, 17f, Palette.Text)
+            WText("NU Rec", Face.BLACK, 18f, Palette.Text)
             Status(state, stale, wide = false)
             Spacer(GlanceModifier.defaultWeight())
-            RefreshButton(state, 30.dp)
+            RefreshButton(state, 32.dp)
         }
-        Spacer(GlanceModifier.height(6.dp))
-        if (rows.isEmpty()) EmptyBody()
-        val context = LocalContext.current
-        val numW = rows.maxOfOrNull {
-            Glyphs.widthDp(context, "${(it.percent ?: 0.0).roundToInt()}", Face.BLACK, numDp) +
-                Glyphs.widthDp(context, "%", Face.BLACK, numDp * 0.5f)
-        } ?: 0f
-        val numCol = (numW + 6f).dp
-        val nameW = (width - pad * 2 - numCol).value
-        val nameDp = Glyphs.fitSize(context, rows.map { it.shortLabel }, Face.BOLD, 11f, 9f, nameW)
+        if (rows.isEmpty()) {
+            Spacer(GlanceModifier.height(6.dp))
+            EmptyBody()
+        }
+        // Fixed gap under the header and at the bottom; all spare height goes between rows.
+        if (rows.isNotEmpty()) Spacer(GlanceModifier.height(10.dp))
         rows.forEachIndexed { i, room ->
-            if (i > 0) Spacer(GlanceModifier.height(rowGap))
-            CompactRow(room, stale, rowH, numDp, numCol, nameW.dp, nameDp)
+            if (i > 0) Spacer(GlanceModifier.defaultWeight())
+            CompactRow(room, stale, numDp, numCol, gutter, nameW.dp, nameDp, nameGap.dp, barH.dp)
+        }
+    }
+}
+
+@Composable
+private fun CompactRow(
+    room: Room, stale: Boolean, numDp: Float, numCol: Dp, gutter: Dp,
+    nameWidth: Dp, nameDp: Float, nameGap: Dp, barH: Dp,
+) {
+    val color = Palette.forLevel(levelFor(room.percent, room.closed), stale)
+    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Box(GlanceModifier.width(numCol)) {
+            PercentText(room, numDp, Palette.Text, Palette.Muted, smallPct = true, tight = true)
+        }
+        Spacer(GlanceModifier.width(gutter))
+        Column(GlanceModifier.defaultWeight()) {
+            WText(room.shortLabel, Face.BOLD, nameDp, Palette.Text, maxWidth = nameWidth, tight = true)
+            Spacer(GlanceModifier.height(nameGap))
+            LinearProgressIndicator(
+                progress = ((room.percent ?: 0.0) / 100).toFloat().coerceIn(0.02f, 1f),
+                modifier = GlanceModifier.fillMaxWidth().height(barH),
+                color = ColorProvider(color),
+                backgroundColor = ColorProvider(Palette.Track),
+            )
         }
     }
 }
@@ -343,25 +383,6 @@ private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Flo
     }
 }
 
-@Composable
-private fun CompactRow(room: Room, stale: Boolean, rowH: Dp, numDp: Float, numCol: Dp, nameWidth: Dp, nameDp: Float) {
-    val color = Palette.forLevel(levelFor(room.percent, room.closed), stale)
-    Row(GlanceModifier.fillMaxWidth().height(rowH), verticalAlignment = Alignment.CenterVertically) {
-        Box(GlanceModifier.width(numCol)) {
-            PercentText(room, numDp, Palette.Text, Palette.Muted, smallPct = true)
-        }
-        Column(GlanceModifier.defaultWeight()) {
-            WText(room.shortLabel, Face.BOLD, nameDp, Palette.Text, maxWidth = nameWidth)
-            Spacer(GlanceModifier.height(3.dp))
-            LinearProgressIndicator(
-                progress = ((room.percent ?: 0.0) / 100).toFloat().coerceIn(0.02f, 1f),
-                modifier = GlanceModifier.fillMaxWidth().height(3.dp),
-                color = ColorProvider(color),
-                backgroundColor = ColorProvider(Palette.Track),
-            )
-        }
-    }
-}
 
 @Composable
 private fun EmptyBody() {

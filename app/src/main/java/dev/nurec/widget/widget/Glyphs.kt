@@ -56,6 +56,7 @@ object Glyphs {
         maxWidthDp: Float? = null,
         lineFace: Face = face,
         lineSizeDp: Float = sizeDp,
+        tight: Boolean = false,
     ): Mask {
         val density = context.resources.displayMetrics.density
         val p = paint(context, face, sizeDp, tracking)
@@ -63,8 +64,10 @@ object Glyphs {
         val shown = if (maxWidthDp != null) {
             TextUtils.ellipsize(text, p, maxWidthDp * density, TextUtils.TruncateAt.END).toString()
         } else text
-        val ascent = -line.fontMetrics.ascent
-        val descent = line.fontMetrics.descent
+        // tight: the mask spans exactly cap top → baseline, so blocks can be aligned to the
+        // visible glyphs (digits and capitals) instead of the font's padded line box.
+        val ascent = if (tight) capHeightPx(line) else -line.fontMetrics.ascent
+        val descent = if (tight) 0f else line.fontMetrics.descent
         val w = ceil(p.measureText(shown)).toInt().coerceAtLeast(1)
         val h = ceil(ascent + descent).toInt().coerceAtLeast(1)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8)
@@ -84,4 +87,14 @@ object Glyphs {
         while (size > minDp && texts.any { widthDp(context, it, face, size, tracking) > widthDp }) size -= 0.5f
         return size
     }
+
+    private fun capHeightPx(p: Paint): Float {
+        val r = android.graphics.Rect()
+        p.getTextBounds("H", 0, 1, r)
+        return r.height().toFloat()
+    }
+
+    /** Height in dp of capital letters (and lining digits) at [sizeDp]. */
+    fun capDp(context: Context, face: Face, sizeDp: Float): Float =
+        capHeightPx(paint(context, face, sizeDp, 0f)) / context.resources.displayMetrics.density
 }
