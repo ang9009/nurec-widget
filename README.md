@@ -2,7 +2,7 @@
 
 Android home-screen widget showing live occupancy for Marino (2nd Floor, 3rd Floor) and SquashBusters (4th Floor). Pulls from the public API.
 
-<img src="docs/widgets.png" width="680">
+<p align="center"><img src="docs/widgets-dark.png" width="680"></p>
 
 ## 1. Get the code
 
@@ -72,9 +72,9 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`
 
 ## 4. Install on your phone
 
-1. On the phone, open Settings → About phone and tap **Build number** 7 times.
-2. Open Settings → System → Developer options and turn on **USB debugging**.
-3. Plug the phone in and tap **Allow** on the prompt.
+1. On the phone, open Settings, then About phone and tap Build number 7 times.
+2. Open Settings, System, then Developer options and turn on USB debugging.
+3. Plug the phone in and tap Allow on the prompt.
 4. Check it's connected (it should be listed as `device`):
 
    ```bash
