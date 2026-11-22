@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One second of the refresh cooldown: draining ring + "0:12" in Barlow Condensed. -->
+<!-- One second of the refresh cooldown: draining ring + "0:12" (a tinted text mask). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -9,15 +9,12 @@
         android:layout_height="match_parent"
         android:scaleType="fitCenter"
         android:importantForAccessibility="no" />
-    <TextView
+    <ImageView
         android:id="@+id/label"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="4dp"
         android:background="@drawable/btn_bg_cooling"
-        android:gravity="center"
-        android:fontFamily="@font/barlow_condensed_semibold"
-        android:includeFontPadding="false"
-        android:textColor="#FFA3A8B0"
-        android:textSize="14sp" />
+        android:scaleType="center"
+        android:importantForAccessibility="no" />
 </FrameLayout>

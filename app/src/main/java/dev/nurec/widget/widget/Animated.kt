@@ -2,17 +2,18 @@ package dev.nurec.widget.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.TypedValue
+import androidx.compose.ui.graphics.toArgb
 import android.widget.RemoteViews
 import dev.nurec.widget.R
 import dev.nurec.widget.data.UiState
+import dev.nurec.widget.ui.Palette
 import java.time.Duration
 import kotlin.math.ceil
 
 /**
  * Widgets can't run animations, but RemoteViews' ViewFlipper auto-advances through its children
- * on its own (only while the widget is on screen). Every frame is a drawable resource or a
- * TextView, never a bitmap: widget updates are capped at ~1 MB and bitmaps blow through that.
+ * on its own (only while the widget is on screen). Frames are drawable resources plus tiny
+ * ALPHA_8 text masks, so the widget update stays small.
  */
 object Animated {
 
@@ -43,8 +44,9 @@ object Animated {
             val f = RemoteViews(context.packageName, R.layout.countdown_frame)
             val step = (s * 15f / total).toInt().coerceIn(1, 15) // ring art has 15 steps
             f.setImageViewResource(R.id.ring, drawable(context, "btn_ring_%02d".format(step)))
-            f.setTextViewText(R.id.label, "0:%02d".format(s))
-            f.setTextViewTextSize(R.id.label, TypedValue.COMPLEX_UNIT_DIP, textDp)
+            val label = Glyphs.render(context, "0:%02d".format(s), Glyphs.Face.DISPLAY_SEMIBOLD, textDp)
+            f.setImageViewBitmap(R.id.label, label.bitmap)
+            f.setInt(R.id.label, "setColorFilter", Palette.Muted.toArgb())
             rv.addView(R.id.flipper, f)
         }
         repeat(IDLE_PAD) { rv.addView(R.id.flipper, RemoteViews(context.packageName, R.layout.countdown_idle)) }

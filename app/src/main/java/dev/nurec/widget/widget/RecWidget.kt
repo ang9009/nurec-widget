@@ -1,19 +1,11 @@
 package dev.nurec.widget.widget
 
 import android.content.Context
-import android.text.SpannableStringBuilder
-import android.text.Spanned
-import android.text.style.AbsoluteSizeSpan
-import android.text.style.ForegroundColorSpan
-import android.util.TypedValue
-import android.view.Gravity
 import android.widget.RemoteViews
-import androidx.annotation.LayoutRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.ColorFilter
@@ -100,36 +92,54 @@ class RefreshAction : ActionCallback {
     }
 }
 
-// ---- Text in the bundled fonts --------------------------------------------------------------
-// Glance's Text only knows system fonts, so text is a plain TextView from an XML layout that sets
-// android:fontFamily="@font/…". No bitmaps, so the update stays tiny.
+// ---- Text in the bundled fonts (drawn as tinted masks, see Glyphs) -------------------------
 
-private enum class Face(@LayoutRes val layout: Int) {
-    DISPLAY(R.layout.text_display),
-    DISPLAY_SEMIBOLD(R.layout.text_display_semibold),
-    TITLE(R.layout.text_title),
-    BODY(R.layout.text_body),
-    BODY_SEMIBOLD(R.layout.text_body_semibold),
-    TAG(R.layout.text_tag),
-}
+private typealias Face = Glyphs.Face
 
 @Composable
 private fun WText(
-    text: CharSequence,
+    text: String,
     face: Face,
     sizeDp: Float,
     color: Color,
-    modifier: GlanceModifier = GlanceModifier,
-    center: Boolean = false,
+    maxWidth: Dp? = null,
+    tracking: Float = 0f,
+    description: String? = text,
 ) {
     val context = LocalContext.current
-    val rv = RemoteViews(context.packageName, face.layout).apply {
-        setTextViewText(R.id.text, text)
-        setTextViewTextSize(R.id.text, TypedValue.COMPLEX_UNIT_DIP, sizeDp)
-        setTextColor(R.id.text, color.toArgb())
-        if (center) setInt(R.id.text, "setGravity", Gravity.CENTER_HORIZONTAL)
+    val m = Glyphs.render(context, text, face, sizeDp, tracking, maxWidth?.value)
+    Image(
+        provider = ImageProvider(m.bitmap),
+        contentDescription = description,
+        colorFilter = ColorFilter.tint(ColorProvider(color)),
+        modifier = GlanceModifier.size(m.widthDp.dp, m.heightDp.dp),
+    )
+}
+
+/** "17" with a half-size "%" on the same baseline. */
+@Composable
+private fun PercentText(room: Room, sizeDp: Float, color: Color, pctColor: Color, smallPct: Boolean) {
+    val context = LocalContext.current
+    val pct = room.percent
+    when {
+        room.closed -> WText("—", Face.DISPLAY, sizeDp, color, description = "Closed")
+        pct == null -> WText("?", Face.DISPLAY, sizeDp, color, description = "Unknown")
+        else -> Row(verticalAlignment = Alignment.Top) {
+            val n = Glyphs.render(context, "${pct.roundToInt()}", Face.DISPLAY, sizeDp)
+            val p = Glyphs.render(
+                context, "%", if (smallPct) Face.DISPLAY_SEMIBOLD else Face.DISPLAY,
+                if (smallPct) sizeDp * 0.5f else sizeDp, lineFace = Face.DISPLAY, lineSizeDp = sizeDp,
+            )
+            Image(
+                ImageProvider(n.bitmap), "${pct.roundToInt()} percent full",
+                GlanceModifier.size(n.widthDp.dp, n.heightDp.dp), colorFilter = ColorFilter.tint(ColorProvider(color)),
+            )
+            Image(
+                ImageProvider(p.bitmap), null,
+                GlanceModifier.size(p.widthDp.dp, p.heightDp.dp), colorFilter = ColorFilter.tint(ColorProvider(pctColor)),
+            )
+        }
     }
-    AndroidRemoteViews(remoteViews = rv, modifier = modifier)
 }
 
 // ---- Layout ---------------------------------------------------------------------------------
@@ -138,7 +148,7 @@ private fun WText(
 private fun WidgetBody(state: UiState) {
     val size = LocalSize.current
     val stale = state.isStale()
-    if (size.width < COMPACT_BELOW) Compact(state, stale, size.height) else Wide(state, stale, size.width, size.height)
+    if (size.width < COMPACT_BELOW) Compact(state, stale, size.width, size.height) else Wide(state, stale, size.width, size.height)
 }
 
 /** 4×2 and up: one header line, then a ring tile per room. Ring size follows the height. */
@@ -156,10 +166,24 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
         modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(24.dp).padding(pad),
     ) {
         Row(GlanceModifier.fillMaxWidth().height(header), verticalAlignment = Alignment.CenterVertically) {
-            WText("NU REC", Face.TITLE, 20f, Palette.Text)
-            Status(state, stale, wide = true)
+            // Measure the header; shorten "Updated 11:02" → "11:02" (then drop "LIVE") if it won't fit.
+            val context = LocalContext.current
+            val avail = width - pad * 2 - 36.dp - 8.dp - 8.dp
+            val title = Glyphs.widthDp(context, "NU REC", Face.DISPLAY, 21f, 0.06f)
+            val live = 25f + Glyphs.widthDp(context, "LIVE", Face.BODY_BOLD, 10f, 0.14f)
+            val full = state.updatedText()
+            val short = full.substringAfterLast(' ')
+            val fullW = Glyphs.widthDp(context, full, Face.BODY, 11f)
+            val shortW = Glyphs.widthDp(context, short, Face.BODY, 11f)
+            val (updated, showLive) = when {
+                title + live + fullW <= avail.value -> full to true
+                title + live + shortW <= avail.value -> short to true
+                else -> short to false
+            }
+            WText("NU REC", Face.DISPLAY, 21f, Palette.Text, tracking = 0.06f)
+            Status(state, stale, wide = showLive)
             Spacer(GlanceModifier.defaultWeight())
-            WText(state.updatedText(), Face.BODY, 11f, Palette.Muted)
+            WText(updated, Face.BODY, 11f, Palette.Muted, description = full)
             Spacer(GlanceModifier.width(8.dp))
             RefreshButton(state, 36.dp)
         }
@@ -167,9 +191,13 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
         if (rooms.isEmpty()) {
             EmptyBody()
         } else Row(GlanceModifier.fillMaxSize()) {
+            val context = LocalContext.current
+            val textW = (tileW - 6.dp).value
+            val nameDp = Glyphs.fitSize(context, rooms.map { it.shortLabel }, Face.BODY_SEMIBOLD, 12f, 9f, textW)
+            val countDp = Glyphs.fitSize(context, rooms.map(::countText), Face.BODY, 10.5f, 8.5f, textW)
             rooms.forEachIndexed { i, room ->
                 if (i > 0) Spacer(GlanceModifier.width(gap))
-                Tile(room, stale, ring, GlanceModifier.defaultWeight().fillMaxHeight())
+                Tile(room, stale, ring, textW.dp, nameDp, countDp, GlanceModifier.defaultWeight().fillMaxHeight())
             }
         }
     }
@@ -177,7 +205,7 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
 
 /** 2×2: header, then busiest-first rows that share the remaining height. */
 @Composable
-private fun Compact(state: UiState, stale: Boolean, height: Dp) {
+private fun Compact(state: UiState, stale: Boolean, width: Dp, height: Dp) {
     val pad = 10.dp
     val header = 30.dp
     val rows = state.snapshot?.busiest(3).orEmpty()
@@ -188,16 +216,21 @@ private fun Compact(state: UiState, stale: Boolean, height: Dp) {
         modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(22.dp).padding(pad),
     ) {
         Row(GlanceModifier.fillMaxWidth().height(header), verticalAlignment = Alignment.CenterVertically) {
-            WText("NU REC", Face.TITLE, 16f, Palette.Text)
+            WText("NU REC", Face.DISPLAY, 17f, Palette.Text, tracking = 0.06f)
             Status(state, stale, wide = false)
             Spacer(GlanceModifier.defaultWeight())
             RefreshButton(state, 30.dp)
         }
         Spacer(GlanceModifier.height(6.dp))
         if (rows.isEmpty()) EmptyBody()
+        val context = LocalContext.current
+        val numW = rows.maxOfOrNull { Glyphs.widthDp(context, "${(it.percent ?: 0.0).roundToInt()}%", Face.DISPLAY, numDp) } ?: 0f
+        val numCol = (numW + 6f).dp
+        val nameW = (width - pad * 2 - numCol).value
+        val nameDp = Glyphs.fitSize(context, rows.map { it.shortLabel }, Face.BODY_SEMIBOLD, 11f, 9f, nameW)
         rows.forEachIndexed { i, room ->
             if (i > 0) Spacer(GlanceModifier.height(rowGap))
-            CompactRow(room, stale, rowH, numDp)
+            CompactRow(room, stale, rowH, numDp, numCol, nameW.dp, nameDp)
         }
     }
 }
@@ -214,13 +247,14 @@ private fun Status(state: UiState, stale: Boolean, wide: Boolean) {
     if (off != null) {
         Spacer(GlanceModifier.width(6.dp))
         Box(GlanceModifier.background(Palette.Chip).cornerRadius(8.dp).padding(horizontal = 6.dp, vertical = 2.dp)) {
-            WText(off, Face.TAG, if (wide) 9.5f else 8.5f, Palette.Text)
+            WText(off, Face.BODY_BOLD, if (wide) 9.5f else 8.5f, Palette.Text, tracking = 0.14f)
         }
         return
     }
     // The pulse box includes room for the halo (mockup: 8px dot, 7px spread).
+    Spacer(GlanceModifier.width(if (wide) 5.dp else 3.dp))
     AndroidRemoteViews(remoteViews = Animated.pulse(context), modifier = GlanceModifier.size(if (wide) 20.dp else 16.dp))
-    if (wide) WText("LIVE", Face.TAG, 10f, Palette.Lime)
+    if (wide) WText("LIVE", Face.BODY_BOLD, 10f, Palette.Lime, tracking = 0.14f)
 }
 
 @Composable
@@ -254,12 +288,12 @@ private fun RefreshButton(state: UiState, size: Dp) {
 }
 
 @Composable
-private fun Tile(room: Room, stale: Boolean, ring: Dp, modifier: GlanceModifier) {
+private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Float, countDp: Float, modifier: GlanceModifier) {
     val context = LocalContext.current
     val pct = room.percent
     val color = Palette.forLevel(levelFor(pct, room.closed), stale)
     Column(
-        modifier = modifier.background(Palette.Tile).cornerRadius(16.dp).padding(vertical = 8.dp, horizontal = 4.dp),
+        modifier = modifier.background(Palette.Tile).cornerRadius(16.dp).padding(vertical = 8.dp, horizontal = 3.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -271,24 +305,24 @@ private fun Tile(room: Room, stale: Boolean, ring: Dp, modifier: GlanceModifier)
                 colorFilter = ColorFilter.tint(ColorProvider(color)),
                 modifier = GlanceModifier.size(ring),
             )
-            WText(percentText(room, ring.value * 0.36f), Face.DISPLAY, ring.value * 0.36f, Palette.Text)
+            PercentText(room, ring.value * 0.36f, Palette.Text, Palette.Muted, smallPct = true)
         }
         Spacer(GlanceModifier.height(4.dp))
-        WText(room.shortLabel, Face.BODY_SEMIBOLD, 12f, Palette.Text, GlanceModifier.fillMaxWidth(), center = true)
+        WText(room.shortLabel, Face.BODY_SEMIBOLD, nameDp, Palette.Text, maxWidth = tileText)
         Spacer(GlanceModifier.height(1.dp))
-        WText(countText(room), Face.BODY, 10.5f, Palette.Muted, GlanceModifier.fillMaxWidth(), center = true)
+        WText(countText(room), Face.BODY, countDp, Palette.Muted, maxWidth = tileText)
     }
 }
 
 @Composable
-private fun CompactRow(room: Room, stale: Boolean, rowH: Dp, numDp: Float) {
+private fun CompactRow(room: Room, stale: Boolean, rowH: Dp, numDp: Float, numCol: Dp, nameWidth: Dp, nameDp: Float) {
     val color = Palette.forLevel(levelFor(room.percent, room.closed), stale)
     Row(GlanceModifier.fillMaxWidth().height(rowH), verticalAlignment = Alignment.CenterVertically) {
-        Box(GlanceModifier.width(38.dp)) {
-            WText(room.percent?.takeIf { !room.closed }?.let { "${it.roundToInt()}%" } ?: if (room.closed) "—" else "?", Face.DISPLAY, numDp, color)
+        Box(GlanceModifier.width(numCol)) {
+            PercentText(room, numDp, color, color, smallPct = false)
         }
         Column(GlanceModifier.defaultWeight()) {
-            WText(room.shortLabel, Face.BODY_SEMIBOLD, 11f, Palette.Text, GlanceModifier.fillMaxWidth())
+            WText(room.shortLabel, Face.BODY_SEMIBOLD, nameDp, Palette.Text, maxWidth = nameWidth)
             Spacer(GlanceModifier.height(3.dp))
             LinearProgressIndicator(
                 progress = ((room.percent ?: 0.0) / 100).toFloat().coerceIn(0.02f, 1f),
@@ -307,22 +341,7 @@ private fun EmptyBody() {
             .clickable(actionRunCallback<RefreshAction>()),
         contentAlignment = Alignment.Center,
     ) {
-        WText("Tap refresh to load occupancy", Face.BODY, 12f, Palette.Muted, center = true)
-    }
-}
-
-/** "17" with a half-size "%" (muted in tiles, as in the mockup). */
-private fun percentText(room: Room, sizeDp: Float): CharSequence {
-    val pct = room.percent
-    return when {
-        room.closed -> "—"
-        pct == null -> "?"
-        else -> SpannableStringBuilder("${pct.roundToInt()}").apply {
-            val start = length
-            append("%")
-            setSpan(AbsoluteSizeSpan((sizeDp * 0.5f).roundToInt(), true), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            setSpan(ForegroundColorSpan(Palette.Muted.toArgb()), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
+        WText("Tap refresh to load occupancy", Face.BODY, 12f, Palette.Muted)
     }
 }
 

@@ -1,5 +1,7 @@
 package dev.nurec.widget.ui
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -52,6 +56,7 @@ import dev.nurec.widget.data.RecRepository
 import dev.nurec.widget.data.Room
 import dev.nurec.widget.data.UiState
 import dev.nurec.widget.data.levelFor
+import dev.nurec.widget.widget.RecWidgetReceiver
 import dev.nurec.widget.work.RefreshWorker
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -165,6 +170,17 @@ private fun Screen(state: UiState, now: Instant, onRefresh: () -> Unit) {
                     "Shrink it to 2×2 for the compact view.",
                 color = Palette.Body, fontSize = 13.sp, lineHeight = 20.sp,
             )
+            val context = LocalContext.current
+            val awm = remember { AppWidgetManager.getInstance(context) }
+            if (awm.isRequestPinAppWidgetSupported) {
+                Spacer(Modifier.size(4.dp))
+                OutlinedButton(
+                    onClick = { awm.requestPinAppWidget(ComponentName(context, RecWidgetReceiver::class.java), null, null) },
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.5.dp, Palette.Lime),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Lime),
+                ) { Text("Add widget to home screen", fontWeight = FontWeight.SemiBold) }
+            }
         }
     }
 }
