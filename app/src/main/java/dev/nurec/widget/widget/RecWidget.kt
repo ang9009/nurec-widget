@@ -42,6 +42,7 @@ import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.unit.ColorProvider
 import dev.nurec.widget.R
+import dev.nurec.widget.data.Facility
 import dev.nurec.widget.data.RecRepository
 import dev.nurec.widget.data.Room
 import dev.nurec.widget.data.UiState
@@ -160,8 +161,12 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
     val rooms = state.snapshot?.rooms.orEmpty()
     // Tile = 8 pad + ring + 4 + name 14 + 1 + count 12 + 8 pad
     val tileExtra = 47.dp
+    val tagExtra = 16.dp // facility label under each card (11) + gap (5)
     val tileW = (width - pad * 2 - gap * 2) / 3
-    val ring = minOf(height - pad * 2 - header - gap - tileExtra, tileW - 16.dp, 72.dp).coerceAtLeast(28.dp)
+    fun ringFor(extra: Dp) = minOf(height - pad * 2 - header - gap - extra, tileW - 16.dp, 72.dp)
+    // Show the facility label only if the ring can stay a readable size.
+    val showTag = ringFor(tileExtra + tagExtra) >= 44.dp
+    val ring = ringFor(if (showTag) tileExtra + tagExtra else tileExtra).coerceAtLeast(28.dp)
     Column(
         modifier = GlanceModifier.fillMaxSize().background(Palette.Card).cornerRadius(24.dp).padding(pad),
     ) {
@@ -193,11 +198,22 @@ private fun Wide(state: UiState, stale: Boolean, width: Dp, height: Dp) {
         } else Row(GlanceModifier.fillMaxSize()) {
             val context = LocalContext.current
             val textW = (tileW - 6.dp).value
-            val nameDp = Glyphs.fitSize(context, rooms.map { it.shortLabel }, Face.BODY_SEMIBOLD, 12f, 9f, textW)
+            val nameDp = Glyphs.fitSize(context, rooms.map { tileName(it, showTag) }, Face.BODY_SEMIBOLD, 12f, 9f, textW)
+            val tagDp = Glyphs.fitSize(context, rooms.map { it.facility.tileTag() }, Face.BODY_SEMIBOLD, 9.5f, 7f, textW + 6f, tracking = 0.14f)
             val countDp = Glyphs.fitSize(context, rooms.map(::countText), Face.BODY, 10.5f, 8.5f, textW)
             rooms.forEachIndexed { i, room ->
                 if (i > 0) Spacer(GlanceModifier.width(gap))
-                Tile(room, stale, ring, textW.dp, nameDp, countDp, GlanceModifier.defaultWeight().fillMaxHeight())
+                Column(
+                    modifier = GlanceModifier.defaultWeight().fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Tile(room, stale, ring, textW.dp, nameDp, countDp, showTag, GlanceModifier.fillMaxWidth().defaultWeight())
+                    if (showTag) {
+                        // Facility label under the card.
+                        Spacer(GlanceModifier.height(5.dp))
+                        WText(room.facility.tileTag(), Face.BODY_SEMIBOLD, tagDp, Palette.Muted, tracking = 0.14f)
+                    }
+                }
             }
         }
     }
@@ -288,7 +304,7 @@ private fun RefreshButton(state: UiState, size: Dp) {
 }
 
 @Composable
-private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Float, countDp: Float, modifier: GlanceModifier) {
+private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Float, countDp: Float, tagged: Boolean, modifier: GlanceModifier) {
     val context = LocalContext.current
     val pct = room.percent
     val color = Palette.forLevel(levelFor(pct, room.closed), stale)
@@ -308,7 +324,7 @@ private fun Tile(room: Room, stale: Boolean, ring: Dp, tileText: Dp, nameDp: Flo
             PercentText(room, ring.value * 0.36f, Palette.Text, Palette.Muted, smallPct = true)
         }
         Spacer(GlanceModifier.height(4.dp))
-        WText(room.shortLabel, Face.BODY_SEMIBOLD, nameDp, Palette.Text, maxWidth = tileText)
+        WText(tileName(room, tagged), Face.BODY_SEMIBOLD, nameDp, Palette.Text, maxWidth = tileText)
         Spacer(GlanceModifier.height(1.dp))
         WText(countText(room), Face.BODY, countDp, Palette.Muted, maxWidth = tileText)
     }
@@ -343,6 +359,15 @@ private fun EmptyBody() {
     ) {
         WText("Tap refresh to load occupancy", Face.BODY, 12f, Palette.Muted)
     }
+}
+
+/** With the facility label above, "SB 4th Floor" can drop its prefix. */
+private fun tileName(room: Room, tagged: Boolean): String = if (tagged) room.label.takeIf { room.facility == Facility.SQUASHBUSTERS } ?: room.shortLabel else room.shortLabel
+
+private fun Facility.tileTag(): String = when (this) {
+    Facility.MARINO -> "MARINO"
+    Facility.SQUASHBUSTERS -> "SQUASHBUSTERS"
+    Facility.OTHER -> "OTHER"
 }
 
 private fun countText(room: Room): String = when {

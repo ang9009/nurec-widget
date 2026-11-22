@@ -79,9 +79,11 @@ object Glyphs {
         paint(context, face, sizeDp, tracking).measureText(text) / context.resources.displayMetrics.density
 
     /** Largest size in [minDp]..[maxDp] (0.5 dp steps) at which every text fits [widthDp]. */
-    fun fitSize(context: Context, texts: List<String>, face: Face, maxDp: Float, minDp: Float, widthDp: Float): Float {
+    fun fitSize(
+        context: Context, texts: List<String>, face: Face, maxDp: Float, minDp: Float, widthDp: Float, tracking: Float = 0f,
+    ): Float {
         var size = maxDp
-        while (size > minDp && texts.any { widthDp(context, it, face, size) > widthDp }) size -= 0.5f
+        while (size > minDp && texts.any { widthDp(context, it, face, size, tracking) > widthDp }) size -= 0.5f
         return size
     }
 }
