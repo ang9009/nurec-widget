@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">NU Rec</string>
+    <string name="widget_name">NU Rec</string>
+    <string name="widget_description">Live occupancy for Marino 2nd Floor, 3rd Floor Weight Room and SquashBusters 4th Floor</string>
+</resources>

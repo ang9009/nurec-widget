@@ -1,0 +1,15 @@
+# Gradle / build
+.gradle/
+build/
+**/build/
+.kotlin/
+# Local config
+local.properties
+# IDE
+.idea/
+*.iml
+.DS_Store
+# Outputs
+*.apk
+*.aab
+captures/
