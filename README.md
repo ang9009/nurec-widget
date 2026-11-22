@@ -28,7 +28,9 @@ export JAVA_HOME="$HOME/.local/jdk/jdk-17.0.21.1+2"
 export ANDROID_HOME="$HOME/Android/Sdk"
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 
-sdkmanager --licenses          # once; accept each license
+# once: SDK packages (sdkmanager is now the `android` CLI in cmdline-tools)
+android --sdk=$ANDROID_HOME sdk install platform-tools "platforms;android-37.2" "build-tools;37.0.0"
+
 ./gradlew testDebugUnitTest    # unit tests (JSON parsing, stale + cooldown logic)
 ./gradlew assembleDebug        # APK
 ```

@@ -17,7 +17,7 @@ class LiveParserTest {
     @Test fun `parses every room in the real sample`() {
         val snap = LiveParser.parse(sample())
         assertEquals(8, snap.allRooms.size)
-        assertEquals(Instant.parse("2026-11-22T15:32:51.701Z"), snap.fetched)
+        assertEquals(Instant.parse("2026-11-22T15:32:56.926Z"), snap.fetched)
         val gym = snap.allRooms.single { it.name == "Marino Center - Gymnasium" }
         assertEquals(Facility.MARINO, gym.facility)
         assertEquals(5, gym.count)
